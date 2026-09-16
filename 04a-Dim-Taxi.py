@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # DBTITLE 1,Dimension Tables — Taxi Star Schema
 # MAGIC %md
 # MAGIC # Dimension Tables — Taxi Star Schema
@@ -7,7 +11,7 @@
 # MAGIC
 # MAGIC | Dimension | Grain | Source |
 # MAGIC |---|---|---|
-# MAGIC | `dim_date` | One row per calendar date | All timestamp columns |
+# MAGIC | `dim_date` | One row per calendar date (century from earliest record) | All timestamp columns |
 # MAGIC | `dim_time` | One row per minute of day (1,440 rows) | Pre-populated |
 # MAGIC | `dim_payment_type` | One row per payment method | `payment_type` |
 # MAGIC | `dim_driver` | One row per driver | `driver` |
@@ -25,10 +29,10 @@ from functools import reduce
 
 # COMMAND ----------
 
-# DBTITLE 1,dim_date — one row per calendar date
+# DBTITLE 1,dim_date — century of dates from earliest record
 @dlt.table(
     name="dim_date",
-    comment="Date dimension — one row per calendar date extracted from all timestamp columns",
+    comment="Date dimension — 100 years of calendar dates starting from the earliest record",
 )
 def dim_date():
     gold = dlt.read("gold_taxi_data")
@@ -38,18 +42,24 @@ def dim_date():
         "time_vehicle_arrived", "time_picked_up",
     ]
 
-    # Union distinct dates from every timestamp column
-    date_dfs = [
-        gold.select(F.to_date(F.col(c)).alias("full_date"))
-            .filter(F.col(c).isNotNull())
+    # Find the earliest valid date across all timestamp columns
+    agg_exprs = [
+        F.min(
+            F.when(
+                F.year(F.to_date(F.col(c))).between(2020, 2130),
+                F.to_date(F.col(c)),
+            )
+        ).alias(f"min_{c}")
         for c in timestamp_cols
     ]
-    all_dates = reduce(lambda a, b: a.union(b), date_dfs).distinct()
 
-    # Exclude erroneous future dates (e.g. year 2568 in source data)
-    all_dates = all_dates.filter(
-        F.col("full_date").isNotNull()
-        & F.year("full_date").between(2020, 2030)
+    bounds = gold.agg(*agg_exprs).collect()[0]
+    min_vals = [bounds[f"min_{c}"] for c in timestamp_cols if bounds[f"min_{c}"] is not None]
+    min_date = min(min_vals)
+
+    # Generate a continuous century of dates (≈36,525 rows)
+    all_dates = spark.sql(
+        f"SELECT explode(sequence(DATE '{min_date}', DATE '{min_date}' + INTERVAL 100 YEARS - INTERVAL 1 DAY, INTERVAL 1 DAY)) AS full_date"
     )
 
     w = Window.orderBy("full_date")
@@ -209,3 +219,88 @@ def dim_capability():
         F.row_number().over(w).cast("int").alias("capability_sk"),
         *CAP_COLS,
     )
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation Checks
+# MAGIC %md
+# MAGIC ## Validation Checks
+# MAGIC Post-pipeline checks — run against the published tables to verify grain, completeness, and content.
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — Dimension PK uniqueness
+# MAGIC %sql
+# MAGIC -- Every dimension PK must be unique (duplicates should be 0 for all rows)
+# MAGIC SELECT 'dim_date' AS dimension, COUNT(*) AS total_rows, COUNT(DISTINCT date_sk) AS distinct_pks, COUNT(*) - COUNT(DISTINCT date_sk) AS duplicates FROM `students_data`.`team-1-data-schema`.dim_date
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_time', COUNT(*), COUNT(DISTINCT time_sk), COUNT(*) - COUNT(DISTINCT time_sk) FROM `students_data`.`team-1-data-schema`.dim_time
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_payment_type', COUNT(*), COUNT(DISTINCT payment_type_sk), COUNT(*) - COUNT(DISTINCT payment_type_sk) FROM `students_data`.`team-1-data-schema`.dim_payment_type
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_driver', COUNT(*), COUNT(DISTINCT driver_sk), COUNT(*) - COUNT(DISTINCT driver_sk) FROM `students_data`.`team-1-data-schema`.dim_driver
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_booking_source', COUNT(*), COUNT(DISTINCT booking_source_sk), COUNT(*) - COUNT(DISTINCT booking_source_sk) FROM `students_data`.`team-1-data-schema`.dim_booking_source
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_location', COUNT(*), COUNT(DISTINCT location_sk), COUNT(*) - COUNT(DISTINCT location_sk) FROM `students_data`.`team-1-data-schema`.dim_location
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_capability', COUNT(*), COUNT(DISTINCT capability_sk), COUNT(*) - COUNT(DISTINCT capability_sk) FROM `students_data`.`team-1-data-schema`.dim_capability
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — Key fields NOT NULL
+# MAGIC %sql
+# MAGIC -- Surrogate keys and natural keys must never be NULL (null_count should be 0 for every row)
+# MAGIC SELECT 'dim_date' AS dimension, 'date_sk' AS key_column, SUM(CASE WHEN date_sk IS NULL THEN 1 ELSE 0 END) AS null_count FROM `students_data`.`team-1-data-schema`.dim_date
+# MAGIC UNION ALL SELECT 'dim_date', 'full_date', SUM(CASE WHEN full_date IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_date
+# MAGIC UNION ALL SELECT 'dim_time', 'time_sk', SUM(CASE WHEN time_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_time
+# MAGIC UNION ALL SELECT 'dim_time', 'hour', SUM(CASE WHEN hour IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_time
+# MAGIC UNION ALL SELECT 'dim_payment_type', 'payment_type_sk', SUM(CASE WHEN payment_type_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_payment_type
+# MAGIC UNION ALL SELECT 'dim_payment_type', 'payment_type_name', SUM(CASE WHEN payment_type_name IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_payment_type
+# MAGIC UNION ALL SELECT 'dim_driver', 'driver_sk', SUM(CASE WHEN driver_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_driver
+# MAGIC UNION ALL SELECT 'dim_driver', 'driver_number', SUM(CASE WHEN driver_number IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_driver
+# MAGIC UNION ALL SELECT 'dim_booking_source', 'booking_source_sk', SUM(CASE WHEN booking_source_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_booking_source
+# MAGIC UNION ALL SELECT 'dim_booking_source', 'booking_source_name', SUM(CASE WHEN booking_source_name IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_booking_source
+# MAGIC UNION ALL SELECT 'dim_location', 'location_sk', SUM(CASE WHEN location_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_location
+# MAGIC UNION ALL SELECT 'dim_location', 'zone_name', SUM(CASE WHEN zone_name IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_location
+# MAGIC UNION ALL SELECT 'dim_capability', 'capability_sk', SUM(CASE WHEN capability_sk IS NULL THEN 1 ELSE 0 END) FROM `students_data`.`team-1-data-schema`.dim_capability
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — Dimension content spot-checks
+# MAGIC %sql
+# MAGIC -- Spot-checks: dim_time row count, payment types listed, zone count, capability combos, date range
+# MAGIC SELECT 'dim_time row count' AS check_name,
+# MAGIC        CAST(COUNT(*) AS STRING) AS result,
+# MAGIC        CASE WHEN COUNT(*) = 1440 THEN 'PASS' ELSE 'FAIL' END AS status
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_time
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'payment_type values',
+# MAGIC        CONCAT_WS(', ', COLLECT_LIST(payment_type_name)),
+# MAGIC        CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_payment_type
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_location zone count',
+# MAGIC        CAST(COUNT(*) AS STRING),
+# MAGIC        CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_location
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_capability combo count',
+# MAGIC        CAST(COUNT(*) AS STRING),
+# MAGIC        CASE WHEN COUNT(*) > 0 THEN 'PASS' ELSE 'FAIL' END
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_capability
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_date contiguous (no gaps)',
+# MAGIC        CONCAT(CAST(COUNT(*) AS STRING), ' rows, span = ', CAST(DATEDIFF(MAX(full_date), MIN(full_date)) + 1 AS STRING)),
+# MAGIC        CASE WHEN COUNT(*) = DATEDIFF(MAX(full_date), MIN(full_date)) + 1 THEN 'PASS' ELSE 'FAIL' END
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_date
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'dim_date max = min + 100 years - 1 day',
+# MAGIC        CONCAT(CAST(MIN(full_date) AS STRING), ' → ', CAST(MAX(full_date) AS STRING)),
+# MAGIC        CASE WHEN MAX(full_date) = CAST(MIN(full_date) + INTERVAL '100' YEAR - INTERVAL '1' DAY AS DATE) THEN 'PASS' ELSE 'FAIL' END
+# MAGIC FROM `students_data`.`team-1-data-schema`.dim_date

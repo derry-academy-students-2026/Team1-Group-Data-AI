@@ -1,4 +1,8 @@
 # Databricks notebook source
+# /// script
+# [tool.databricks.environment]
+# environment_version = "5"
+# ///
 # DBTITLE 1,Fact Table — Taxi Star Schema
 # MAGIC %md
 # MAGIC # Fact Table — Taxi Star Schema
@@ -195,3 +199,100 @@ def fact_journey():
         "is_valid_duration",
         "is_price_outlier",
     )
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation Checks
+# MAGIC %md
+# MAGIC ## Validation Checks
+# MAGIC Post-pipeline checks — run against the published tables to verify grain, joins, and referential integrity.
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — Row count vs gold + booking_id uniqueness
+# MAGIC %sql
+# MAGIC -- fact_journey row count should match gold_taxi_data; booking_id must be unique in both
+# MAGIC SELECT
+# MAGIC   'fact_journey' AS table_name,
+# MAGIC   COUNT(*)       AS total_rows,
+# MAGIC   COUNT(DISTINCT booking_id) AS distinct_booking_ids,
+# MAGIC   COUNT(*) - COUNT(DISTINCT booking_id) AS duplicates
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC
+# MAGIC SELECT
+# MAGIC   'gold_taxi_data',
+# MAGIC   COUNT(*),
+# MAGIC   COUNT(DISTINCT booking_id),
+# MAGIC   COUNT(*) - COUNT(DISTINCT booking_id)
+# MAGIC FROM `students_data`.`team-1-data-schema`.gold_taxi_data
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — FK referential integrity (orphan check)
+# MAGIC %sql
+# MAGIC -- Every non-null FK must match a real dimension row (orphan_rows should be 0 for all)
+# MAGIC SELECT 'driver_sk' AS fk_column, COUNT(*) AS orphan_rows
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE driver_sk IS NOT NULL
+# MAGIC   AND driver_sk NOT IN (SELECT driver_sk FROM `students_data`.`team-1-data-schema`.dim_driver)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'payment_type_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE payment_type_sk IS NOT NULL
+# MAGIC   AND payment_type_sk NOT IN (SELECT payment_type_sk FROM `students_data`.`team-1-data-schema`.dim_payment_type)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'booking_source_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE booking_source_sk IS NOT NULL
+# MAGIC   AND booking_source_sk NOT IN (SELECT booking_source_sk FROM `students_data`.`team-1-data-schema`.dim_booking_source)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'pickup_location_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE pickup_location_sk IS NOT NULL
+# MAGIC   AND pickup_location_sk NOT IN (SELECT location_sk FROM `students_data`.`team-1-data-schema`.dim_location)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'destination_location_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE destination_location_sk IS NOT NULL
+# MAGIC   AND destination_location_sk NOT IN (SELECT location_sk FROM `students_data`.`team-1-data-schema`.dim_location)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'capability_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE capability_sk IS NOT NULL
+# MAGIC   AND capability_sk NOT IN (SELECT capability_sk FROM `students_data`.`team-1-data-schema`.dim_capability)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'pickup_due_date_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE pickup_due_date_sk IS NOT NULL
+# MAGIC   AND pickup_due_date_sk NOT IN (SELECT date_sk FROM `students_data`.`team-1-data-schema`.dim_date)
+# MAGIC
+# MAGIC UNION ALL
+# MAGIC SELECT 'pickup_due_time_sk', COUNT(*)
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
+# MAGIC WHERE pickup_due_time_sk IS NOT NULL
+# MAGIC   AND pickup_due_time_sk NOT IN (SELECT time_sk FROM `students_data`.`team-1-data-schema`.dim_time)
+
+# COMMAND ----------
+
+# DBTITLE 1,Validation — NULL FK summary (join success rate)
+# MAGIC %sql
+# MAGIC -- Percentage of NULL FKs per column — high values may indicate join failures
+# MAGIC SELECT
+# MAGIC   COUNT(*) AS total_rows,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN driver_sk              IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_driver,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN payment_type_sk         IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_payment_type,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN booking_source_sk        IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_booking_source,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN pickup_location_sk       IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_pickup_loc,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN destination_location_sk  IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_dest_loc,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN capability_sk            IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_capability,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN pickup_due_date_sk       IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_pickup_due_date,
+# MAGIC   ROUND(100.0 * SUM(CASE WHEN completed_date_sk        IS NULL THEN 1 ELSE 0 END) / COUNT(*), 2) AS pct_null_completed_date
+# MAGIC FROM `students_data`.`team-1-data-schema`.fact_journey
