@@ -1,0 +1,48 @@
+{
+  "note": "This dashboard is hosted as a live Databricks AI/BI Dashboard.",
+  "dashboard_id": "01f1b1d6a776164f99950f1a8d468bab",
+  "dashboard_name": "Taxi Business Performance Dashboard",
+  "workspace_url": "https://adb-4356470353584560.0.azuredatabricks.net/editor/sql/dashboardsv3/01f1b1d6a776164f99950f1a8d468bab",
+  "schema": "students_data.team-1-data-schema",
+  "datasets": [
+    "taxi_kpis",
+    "taxi_monthly_trend",
+    "taxi_busiest_zones",
+    "taxi_heatmap",
+    "taxi_payment_cancel",
+    "filter_years",
+    "filter_months",
+    "filter_days"
+  ],
+  "tables_used": [
+    "fact_journey",
+    "dim_date",
+    "dim_time",
+    "dim_location",
+    "dim_payment_type",
+    "dim_driver",
+    "dim_booking_source",
+    "dim_capability"
+  ],
+  "widgets": {
+    "page_1": [
+      "exec_title - Dashboard Title",
+      "flt_year, flt_month, flt_day - Year/Month/Day multi-select filters",
+      "kpi1 - Total Bookings (counter)",
+      "kpi2 - Completed Jobs (counter)",
+      "kpi3 - Completion Rate % (counter, green)",
+      "kpi4 - Cancel/No-Fare Rate % (counter, amber)",
+      "kpi5 - Avg Wait Time mins (counter, blue)",
+      "q1_heading - Q1 section heading",
+      "q1_zones_v2 - Top 15 Busiest Pickup Zones (horizontal bar)",
+      "q1_insight - Service Performance text",
+      "q2_heading - Q2 section heading",
+      "q2_trend - Booking Demand Trend (line chart)",
+      "q2_heatmap - Demand Heatmap day x hour",
+      "q2_insight - Peak demand analysis text",
+      "q3_heading - Q3 section heading",
+      "q3_chart - Cancellation Rate by Payment Type (bar chart)",
+      "q3_insight - Payment type analysis text"
+    ]
+  }
+}
