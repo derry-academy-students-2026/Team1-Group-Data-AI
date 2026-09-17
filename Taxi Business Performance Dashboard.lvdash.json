@@ -1088,17 +1088,18 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Booking Demand Trend"
+                "title": {
+                  "value": "Booking Demand Trend",
+                  "fields": []
+                }
               },
               "version": 3,
               "mark": {
                 "colors": [
                   "#2563EB"
                 ],
-                "marker": {
-                  "shape": "circle"
-                },
-                "size": 1
+                "lineShape": "smooth",
+                "size": 0
               },
               "widgetType": "line",
               "encodings": {
@@ -1653,7 +1654,7 @@
                 "\n",
                 "A small number of zones consistently dominate demand — the top 5 account for nearly half of all bookings, while lower-volume zones may benefit from targeted dispatch optimisation.\n",
                 "\n",
-                "The KPI counters at the top of the dashboard update with every filter selection, so you can directly compare how **completion rates**, **cancellation rates**, and **average wait times** shift across different periods."
+                "The KPI counters at the top of the dashboard update with every filter selection, so you can directly compare how **completion rates**, **cancellation rates&#32;** and **average wait times** shift across different periods."
               ]
             }
           },
@@ -1671,9 +1672,9 @@
               "lines": [
                 "### Payment Type Analysis\n",
                 "\n",
-                "**Card** bookings consistently show a significantly higher cancellation/no-fare rate compared to **Cash** and **Account** payments — often more than double.\n",
+                "**Card** bookings show a much higher cancel rate — often 2x that of Cash or Account. Only a limited number of drivers carry card machines, so card customers wait longer and are more likely to cancel.\n",
                 "\n",
-                "Account-based bookings tend to have the lowest cancellation rates, likely due to corporate accountability."
+                "**Account** bookings have the lowest cancellation rate, likely due to corporate accountability."
               ]
             }
           },
