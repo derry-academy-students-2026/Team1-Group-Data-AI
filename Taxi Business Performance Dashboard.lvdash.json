@@ -14,6 +14,8 @@
         "  `students_data`.`team-1-data-schema`.`fact_journey` f\n",
         "    JOIN `students_data`.`team-1-data-schema`.`dim_date` d\n",
         "      ON f.pickup_due_date_sk = d.date_sk\n",
+        "    JOIN `students_data`.`team-1-data-schema`.`dim_time` t\n",
+        "      ON f.pickup_due_time_sk = t.time_sk\n",
         "WHERE\n",
         "  (\n",
         "    :month_filter IS NULL\n",
@@ -24,6 +26,7 @@
         "    OR array_contains(:day_filter, CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name))\n",
         "  )\n",
         "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))\n",
+        "  AND (:time_of_day_filter IS NULL OR array_contains(:time_of_day_filter, CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day)))\n",
         "  AND d.full_date >= '2025-01-01'\n",
         "  AND d.full_date <= CURRENT_DATE()\n",
         "GROUP BY\n",
@@ -39,33 +42,28 @@
           "keyword": "month_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Day of Week",
           "keyword": "day_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Year",
           "keyword": "year_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
+        },
+        {
+          "displayName": "Time of Day",
+          "keyword": "time_of_day_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {}
         }
       ]
     },
@@ -85,6 +83,8 @@
         "      ON f.pickup_location_sk = l.location_sk\n",
         "    JOIN `students_data`.`team-1-data-schema`.`dim_date` d\n",
         "      ON f.pickup_due_date_sk = d.date_sk\n",
+        "    JOIN `students_data`.`team-1-data-schema`.`dim_time` t\n",
+        "      ON f.pickup_due_time_sk = t.time_sk\n",
         "WHERE\n",
         "  (\n",
         "    :month_filter IS NULL\n",
@@ -95,6 +95,7 @@
         "    OR array_contains(:day_filter, CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name))\n",
         "  )\n",
         "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))\n",
+        "  AND (:time_of_day_filter IS NULL OR array_contains(:time_of_day_filter, CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day)))\n",
         "GROUP BY\n",
         "  l.zone_name\n",
         "ORDER BY\n",
@@ -107,33 +108,28 @@
           "keyword": "month_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Day of Week",
           "keyword": "day_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Year",
           "keyword": "year_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
+        },
+        {
+          "displayName": "Time of Day",
+          "keyword": "time_of_day_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {}
         }
       ]
     },
@@ -173,6 +169,8 @@
         "  `students_data`.`team-1-data-schema`.`fact_journey` f\n",
         "    JOIN `students_data`.`team-1-data-schema`.`dim_date` d\n",
         "      ON f.pickup_due_date_sk = d.date_sk\n",
+        "    JOIN `students_data`.`team-1-data-schema`.`dim_time` t\n",
+        "      ON f.pickup_due_time_sk = t.time_sk\n",
         "WHERE\n",
         "  (\n",
         "    :month_filter IS NULL\n",
@@ -182,7 +180,8 @@
         "    :day_filter IS NULL\n",
         "    OR array_contains(:day_filter, CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name))\n",
         "  )\n",
-        "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))"
+        "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))\n",
+        "  AND (:time_of_day_filter IS NULL OR array_contains(:time_of_day_filter, CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day)))"
       ],
       "parameters": [
         {
@@ -190,33 +189,28 @@
           "keyword": "month_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Day of Week",
           "keyword": "day_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Year",
           "keyword": "year_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
+        },
+        {
+          "displayName": "Time of Day",
+          "keyword": "time_of_day_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {}
         }
       ]
     },
@@ -234,7 +228,7 @@
         "    WHEN 'Saturday' THEN '6-Sat'\n",
         "    WHEN 'Sunday' THEN '7-Sun'\n",
         "  END AS day_of_week,\n",
-        "  t.hour AS pickup_hour,\n",
+        "  LPAD(CAST(t.hour AS STRING), 2, '0') AS pickup_hour,\n",
         "  COUNT(DISTINCT f.booking_id) AS trip_count\n",
         "FROM\n",
         "  `students_data`.`team-1-data-schema`.`fact_journey` f\n",
@@ -252,6 +246,7 @@
         "    OR array_contains(:day_filter, CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name))\n",
         "  )\n",
         "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))\n",
+        "  AND (:time_of_day_filter IS NULL OR array_contains(:time_of_day_filter, CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day)))\n",
         "GROUP BY\n",
         "  d.day_name,\n",
         "  t.hour\n",
@@ -300,6 +295,17 @@
               "operator": "AND"
             }
           }
+        },
+        {
+          "displayName": "Time of Day",
+          "keyword": "time_of_day_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {
+            "operator": {
+              "operator": "AND"
+            }
+          }
         }
       ]
     },
@@ -326,6 +332,8 @@
         "      ON f.payment_type_sk = p.payment_type_sk\n",
         "    JOIN `students_data`.`team-1-data-schema`.`dim_date` d\n",
         "      ON f.pickup_due_date_sk = d.date_sk\n",
+        "    JOIN `students_data`.`team-1-data-schema`.`dim_time` t\n",
+        "      ON f.pickup_due_time_sk = t.time_sk\n",
         "WHERE\n",
         "  (\n",
         "    :month_filter IS NULL\n",
@@ -336,6 +344,7 @@
         "    OR array_contains(:day_filter, CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name))\n",
         "  )\n",
         "  AND (:year_filter IS NULL OR array_contains(:year_filter, CAST(d.year AS STRING)))\n",
+        "  AND (:time_of_day_filter IS NULL OR array_contains(:time_of_day_filter, CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day)))\n",
         "GROUP BY\n",
         "  p.payment_type_name\n",
         "ORDER BY\n",
@@ -347,33 +356,28 @@
           "keyword": "month_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Day of Week",
           "keyword": "day_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
         },
         {
           "displayName": "Year",
           "keyword": "year_filter",
           "dataType": "STRING",
           "complexType": "MULTI",
-          "defaultSelection": {
-            "operator": {
-              "operator": "AND"
-            }
-          }
+          "defaultSelection": {}
+        },
+        {
+          "displayName": "Time of Day",
+          "keyword": "time_of_day_filter",
+          "dataType": "STRING",
+          "complexType": "MULTI",
+          "defaultSelection": {}
         }
       ]
     },
@@ -438,6 +442,37 @@
         "  AND d.full_date <= CURRENT_DATE()\n",
         "ORDER BY\n",
         "  year"
+      ]
+    },
+    {
+      "name": "filter_time_of_day",
+      "displayName": "filter_time_of_day",
+      "queryLines": [
+        "SELECT DISTINCT\n",
+        "  CONCAT(\n",
+        "    CAST(\n",
+        "      CASE t.time_of_day\n",
+        "        WHEN 'Morning' THEN 1\n",
+        "        WHEN 'Afternoon' THEN 2\n",
+        "        WHEN 'Evening' THEN 3\n",
+        "        WHEN 'Night' THEN 4\n",
+        "      END AS STRING\n",
+        "    ),\n",
+        "    ' - ',\n",
+        "    t.time_of_day\n",
+        "  ) AS time_of_day,\n",
+        "  CASE t.time_of_day\n",
+        "    WHEN 'Morning' THEN 1\n",
+        "    WHEN 'Afternoon' THEN 2\n",
+        "    WHEN 'Evening' THEN 3\n",
+        "    WHEN 'Night' THEN 4\n",
+        "  END AS sort_order\n",
+        "FROM\n",
+        "  `students_data`.`team-1-data-schema`.`dim_time` t\n",
+        "    JOIN `students_data`.`team-1-data-schema`.`fact_journey` f\n",
+        "      ON t.time_sk = f.pickup_due_time_sk\n",
+        "ORDER BY\n",
+        "  sort_order"
       ]
     }
   ],
@@ -590,9 +625,9 @@
             }
           },
           "position": {
-            "x": 4,
+            "x": 6,
             "y": 1,
-            "width": 4,
+            "width": 6,
             "height": 1
           }
         },
@@ -724,9 +759,9 @@
             }
           },
           "position": {
-            "x": 8,
-            "y": 1,
-            "width": 4,
+            "x": 0,
+            "y": 2,
+            "width": 6,
             "height": 1
           }
         },
@@ -768,7 +803,7 @@
           },
           "position": {
             "x": 0,
-            "y": 2,
+            "y": 3,
             "width": 3,
             "height": 2
           }
@@ -811,7 +846,7 @@
           },
           "position": {
             "x": 3,
-            "y": 2,
+            "y": 3,
             "width": 3,
             "height": 2
           }
@@ -875,7 +910,7 @@
           },
           "position": {
             "x": 6,
-            "y": 2,
+            "y": 3,
             "width": 2,
             "height": 2
           }
@@ -939,7 +974,7 @@
           },
           "position": {
             "x": 8,
-            "y": 2,
+            "y": 3,
             "width": 2,
             "height": 2
           }
@@ -991,7 +1026,7 @@
           },
           "position": {
             "x": 10,
-            "y": 2,
+            "y": 3,
             "width": 2,
             "height": 2
           }
@@ -1001,39 +1036,15 @@
             "name": "q1_heading",
             "multilineTextboxSpec": {
               "lines": [
-                "### <span style=\"font-weight: 700;font-size: 14px;\">Q1: Which pickup zones generate the most work and what is our service performance?</span>"
+                "### Pickup Zone Performance & Service Metrics"
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 4,
+            "y": 5,
             "width": 12,
             "height": 1
-          }
-        },
-        {
-          "widget": {
-            "name": "q1_insight",
-            "multilineTextboxSpec": {
-              "lines": [
-                "### Service Performance\n",
-                "\n",
-                "**87.38%** of bookings complete successfully, while **12.62%** end in cancellation or no-fare.\n",
-                "\n",
-                "Average customer wait time is **4.3 minutes** from dispatch to vehicle arrival.\n",
-                "\n",
-                "**BOG5** is the busiest zone with ~108K trips, followed by **TOW2** (77K) and **BMC9** (63K). The top 5 zones account for nearly half of all bookings.\n",
-                "\n",
-                "Lower-volume zones like **S/F30** (12K) and **CUL20** (9K) may benefit from targeted dispatch optimisation."
-              ]
-            }
-          },
-          "position": {
-            "x": 8,
-            "y": 5,
-            "width": 4,
-            "height": 9
           }
         },
         {
@@ -1041,13 +1052,13 @@
             "name": "q2_heading",
             "multilineTextboxSpec": {
               "lines": [
-                "### Q2: When are the busiest periods and optimal driver working times?"
+                "### Demand Patterns & Optimal Driver Scheduling"
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 14,
+            "y": 15,
             "width": 12,
             "height": 1
           }
@@ -1077,10 +1088,7 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": {
-                  "value": "Booking Demand Trend",
-                  "fields": []
-                }
+                "title": "Booking Demand Trend"
               },
               "version": 3,
               "mark": {
@@ -1090,18 +1098,20 @@
                 "marker": {
                   "shape": "circle"
                 },
-                "size": 2
+                "size": 1
               },
               "widgetType": "line",
               "encodings": {
                 "x": {
                   "fieldName": "trip_date",
+                  "displayName": "Date",
                   "scale": {
                     "type": "temporal"
                   }
                 },
                 "y": {
                   "fieldName": "sum(trip_count)",
+                  "displayName": "Number of Bookings",
                   "scale": {
                     "type": "quantitative"
                   }
@@ -1114,7 +1124,7 @@
           },
           "position": {
             "x": 0,
-            "y": 15,
+            "y": 16,
             "width": 12,
             "height": 5
           }
@@ -1148,27 +1158,41 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Demand Heatmap"
+                "title": {
+                  "value": "Demand Heatmap",
+                  "fields": []
+                }
               },
               "version": 3,
               "widgetType": "heatmap",
               "encodings": {
                 "x": {
                   "fieldName": "pickup_hour",
+                  "displayName": "Hour of Day",
                   "scale": {
                     "type": "categorical"
                   }
                 },
                 "y": {
                   "fieldName": "day_of_week",
+                  "displayName": "Day of Week",
                   "scale": {
                     "type": "categorical"
                   }
                 },
                 "color": {
                   "fieldName": "sum(trip_count)",
+                  "displayName": "Number of Trips",
                   "scale": {
-                    "type": "quantitative"
+                    "type": "quantitative",
+                    "colorRamp": {
+                      "mode": "custom-diverging",
+                      "colors": {
+                        "start": "#22C55E",
+                        "mid": "#EAB308",
+                        "end": "#EF4444"
+                      }
+                    }
                   }
                 }
               },
@@ -1179,7 +1203,7 @@
           },
           "position": {
             "x": 0,
-            "y": 20,
+            "y": 21,
             "width": 12,
             "height": 7
           }
@@ -1197,7 +1221,7 @@
           },
           "position": {
             "x": 0,
-            "y": 27,
+            "y": 28,
             "width": 12,
             "height": 2
           }
@@ -1207,15 +1231,15 @@
             "name": "q3_heading",
             "multilineTextboxSpec": {
               "lines": [
-                "### Q3: Is there a relationship between payment type and cancellation rate — are card payments worth requiring?"
+                "### Payment Type & Cancellation Analysis"
               ]
             }
           },
           "position": {
             "x": 0,
-            "y": 29,
+            "y": 30,
             "width": 12,
-            "height": 2
+            "height": 1
           }
         },
         {
@@ -1244,7 +1268,10 @@
               "frame": {
                 "showTitle": true,
                 "showDescription": true,
-                "title": "Cancellation Rate by Payment Type",
+                "title": {
+                  "value": "Cancellation Rate by Payment Type",
+                  "fields": []
+                },
                 "description": {
                   "value": "Percentage of bookings ending in cancellation or no-fare, grouped by payment method",
                   "fields": []
@@ -1262,14 +1289,14 @@
               "encodings": {
                 "x": {
                   "fieldName": "sum(cancel_nofare_rate_pct)",
-                  "displayName": "Cancel/No-Fare Rate %",
+                  "displayName": "Cancellation / No-Fare Rate (%)",
                   "scale": {
                     "type": "quantitative"
                   }
                 },
                 "y": {
                   "fieldName": "payment_type",
-                  "displayName": "Payment Type",
+                  "displayName": "Payment Method",
                   "scale": {
                     "type": "categorical"
                   }
@@ -1284,30 +1311,6 @@
             "x": 0,
             "y": 31,
             "width": 7,
-            "height": 7
-          }
-        },
-        {
-          "widget": {
-            "name": "q3_insight",
-            "multilineTextboxSpec": {
-              "lines": [
-                "### Payment Type Analysis\n",
-                "\n",
-                "**Card** bookings have a **24.51%** cancellation/no-fare rate — more than double the rate for **Cash** (10.21%).\n",
-                "\n",
-                "**Account** bookings sit at **10.57%**, likely due to corporate accountability.\n",
-                "\n",
-                "This strongly suggests that **mandatory card payments would increase cancellations**, not reduce them. Cash and account-based bookings remain the most reliable for completed trips.\n",
-                "\n",
-                "> *Recommendation: Do not mandate card-only payments. Consider incentivising cash or account-based bookings.*"
-              ]
-            }
-          },
-          "position": {
-            "x": 7,
-            "y": 31,
-            "width": 5,
             "height": 7
           }
         },
@@ -1438,7 +1441,7 @@
           "position": {
             "x": 0,
             "y": 1,
-            "width": 4,
+            "width": 6,
             "height": 1
           }
         },
@@ -1467,7 +1470,10 @@
             "spec": {
               "frame": {
                 "showTitle": true,
-                "title": "Top 15 Busiest Pickup Zones"
+                "title": {
+                  "value": "Top 15 Busiest Pickup Zones",
+                  "fields": []
+                }
               },
               "version": 3,
               "mark": {
@@ -1479,12 +1485,14 @@
               "encodings": {
                 "x": {
                   "fieldName": "sum(trip_count)",
+                  "displayName": "Number of Trips",
                   "scale": {
                     "type": "quantitative"
                   }
                 },
                 "y": {
                   "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
                   "scale": {
                     "type": "categorical",
                     "sort": {
@@ -1500,9 +1508,305 @@
           },
           "position": {
             "x": 0,
-            "y": 5,
+            "y": 6,
             "width": 8,
             "height": 9
+          }
+        },
+        {
+          "widget": {
+            "name": "flt_time_of_day",
+            "queries": [
+              {
+                "name": "dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b298da7a1dcabfabcff461e72101_time_of_day",
+                "query": {
+                  "datasetName": "filter_time_of_day",
+                  "fields": [
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "time_of_day_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9531defa959e80ae466f51c_time_of_day_filter",
+                "query": {
+                  "datasetName": "taxi_kpis",
+                  "parameters": [
+                    {
+                      "name": "time_of_day_filter",
+                      "keyword": "time_of_day_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd8fd19ddbb65da972eca1a9b_time_of_day_filter",
+                "query": {
+                  "datasetName": "taxi_monthly_trend",
+                  "parameters": [
+                    {
+                      "name": "time_of_day_filter",
+                      "keyword": "time_of_day_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9281687b256dff919e102fd_time_of_day_filter",
+                "query": {
+                  "datasetName": "taxi_busiest_zones",
+                  "parameters": [
+                    {
+                      "name": "time_of_day_filter",
+                      "keyword": "time_of_day_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9a718688a8905f1fdb41afe_time_of_day_filter",
+                "query": {
+                  "datasetName": "taxi_payment_cancel",
+                  "parameters": [
+                    {
+                      "name": "time_of_day_filter",
+                      "keyword": "time_of_day_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              },
+              {
+                "name": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd98a1655921b88b79792d891_time_of_day_filter",
+                "query": {
+                  "datasetName": "taxi_heatmap",
+                  "parameters": [
+                    {
+                      "name": "time_of_day_filter",
+                      "keyword": "time_of_day_filter"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Time of Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "time_of_day",
+                    "queryName": "dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b298da7a1dcabfabcff461e72101_time_of_day"
+                  },
+                  {
+                    "parameterName": "time_of_day_filter",
+                    "queryName": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9531defa959e80ae466f51c_time_of_day_filter"
+                  },
+                  {
+                    "parameterName": "time_of_day_filter",
+                    "queryName": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd8fd19ddbb65da972eca1a9b_time_of_day_filter"
+                  },
+                  {
+                    "parameterName": "time_of_day_filter",
+                    "queryName": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9281687b256dff919e102fd_time_of_day_filter"
+                  },
+                  {
+                    "parameterName": "time_of_day_filter",
+                    "queryName": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd9a718688a8905f1fdb41afe_time_of_day_filter"
+                  },
+                  {
+                    "parameterName": "time_of_day_filter",
+                    "queryName": "parameter_dashboards/01f1b1d6a776164f99950f1a8d468bab/datasets/01f1b1dbd98a1655921b88b79792d891_time_of_day_filter"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 6,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "zone_insight_final",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Zone Analysis\n",
+                "\n",
+                "A small number of zones consistently dominate demand — the top 5 account for nearly half of all bookings, while lower-volume zones may benefit from targeted dispatch optimisation.\n",
+                "\n",
+                "The KPI counters at the top of the dashboard update with every filter selection, so you can directly compare how **completion rates**, **cancellation rates**, and **average wait times** shift across different periods."
+              ]
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 6,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "pay_insight_final",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Payment Type Analysis\n",
+                "\n",
+                "**Card** bookings consistently show a significantly higher cancellation/no-fare rate compared to **Cash** and **Account** payments — often more than double.\n",
+                "\n",
+                "Account-based bookings tend to have the lowest cancellation rates, likely due to corporate accountability."
+              ]
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 31,
+            "width": 5,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "zone_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_busiest_zones",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "sum(trip_count)",
+                      "expression": "SUM(`trip_count`)"
+                    },
+                    {
+                      "name": "sum(avg_wait_minutes)",
+                      "expression": "SUM(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Top Zones",
+                  "fields": []
+                }
+              },
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pickup_zone",
+                    "headerAlignment": "left",
+                    "displayName": "Zone"
+                  },
+                  {
+                    "fieldName": "sum(trip_count)",
+                    "headerAlignment": "right",
+                    "displayName": "Trips"
+                  },
+                  {
+                    "fieldName": "sum(avg_wait_minutes)",
+                    "headerAlignment": "right",
+                    "displayName": "Wait (min)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 10,
+            "width": 4,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "pay_cancel_kpi",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_kpis",
+                  "fields": [
+                    {
+                      "name": "cancel_nofare_rate_pct",
+                      "expression": "`cancel_nofare_rate_pct`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Overall Cancel Rate KPI"
+              },
+              "version": 2,
+              "style": {
+                "fontColor": {
+                  "light": "#EF4444",
+                  "dark": "#F87171"
+                }
+              },
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "cancel_nofare_rate_pct",
+                  "rowNumber": 0,
+                  "formatTemplate": "{{ @formatted }}%",
+                  "format": {
+                    "type": "number-plain",
+                    "abbreviation": "none",
+                    "decimalPlaces": {
+                      "type": "exact",
+                      "places": 2
+                    }
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 35,
+            "width": 5,
+            "height": 3
           }
         }
       ],
@@ -1513,16 +1817,16 @@
   "uiSettings": {
     "theme": {
       "canvasBackgroundColor": {
-        "light": "#F5F7FA",
-        "dark": "#0F1318"
+        "light": "#FFFFFF",
+        "dark": "#1B1B1B"
       },
       "widgetBackgroundColor": {
         "light": "#FFFFFF",
-        "dark": "#1A1F2B"
+        "dark": "#1B1B1B"
       },
       "widgetBorderColor": {
         "light": "#E2E8F0",
-        "dark": "#2A3040"
+        "dark": "#334155"
       },
       "selectionColor": {
         "light": "#2563EB",
@@ -1530,47 +1834,47 @@
       },
       "visualizationColors": [
         "#2563EB",
-        "#10B981",
-        "#F59E0B",
+        "#059669",
+        "#D97706",
         "#EF4444",
         "#8B5CF6",
         "#EC4899",
-        "#06B6D4",
-        "#F97316"
+        "#0891B2",
+        "#65A30D"
       ],
       "widgetHeaderAlignment": "LEFT",
       "widgetPadding": 12,
-      "widgetMargin": 4,
+      "widgetMargin": 6,
       "widgetCornerRadius": 8,
-      "widgetShadow": 0,
+      "widgetShadow": 4,
       "continuousGradient": {
         "lightMode": {
-          "customDiverging": {
-            "start": "#10B981",
-            "mid": "#FBBF24",
-            "end": "#EF4444"
+          "customSequential": {
+            "start": "#FFFFFF",
+            "end": "#2563EB"
           }
         },
         "darkMode": {
-          "customDiverging": {
-            "start": "#10B981",
-            "mid": "#FBBF24",
-            "end": "#EF4444"
+          "customSequential": {
+            "start": "#1B1B1B",
+            "end": "#3B82F6"
           }
         }
       },
       "fontSettings": {
         "base": {
-          "fontFamily": "DM Sans",
+          "fontFamily": "Inter",
+          "fontSize": 13,
           "fontWeight": 400
         },
         "widgetTitle": {
-          "fontFamily": "DM Sans",
+          "fontFamily": "Inter",
           "fontSize": 14,
           "fontWeight": 600
         },
         "widgetDescription": {
-          "fontFamily": "DM Sans"
+          "fontFamily": "Inter",
+          "fontWeight": 400
         },
         "fieldTitle": {
           "fontFamily": "Inter",
@@ -1580,6 +1884,10 @@
           "fontFamily": "Inter",
           "fontWeight": 400
         }
+      },
+      "gridLineColor": {
+        "light": "#F1F5F9",
+        "dark": "#1E293B"
       }
     },
     "applyModeEnabled": false
