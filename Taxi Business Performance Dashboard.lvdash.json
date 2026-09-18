@@ -474,12 +474,264 @@
         "ORDER BY\n",
         "  sort_order"
       ]
+    },
+    {
+      "name": "taxi_ops_analysis",
+      "displayName": "taxi_ops_analysis",
+      "config": {
+        "source": "SELECT\n  f.booking_id,\n  f.trip_status,\n  f.vehicle,\n  f.priority,\n  f.price,\n  f.distance,\n  f.wait_time_minutes,\n  f.trip_duration_minutes,\n  f.total_time_taken,\n  f.price_per_mile,\n  f.is_price_outlier,\n  d.full_date AS trip_date,\n  CAST(d.year AS STRING) AS year_label,\n  CONCAT(LPAD(CAST(d.month AS STRING), 2, '0'), ' - ', d.month_name) AS month_label,\n  CONCAT(CAST(CASE d.day_name WHEN 'Monday' THEN 1 WHEN 'Tuesday' THEN 2 WHEN 'Wednesday' THEN 3 WHEN 'Thursday' THEN 4 WHEN 'Friday' THEN 5 WHEN 'Saturday' THEN 6 WHEN 'Sunday' THEN 7 END AS STRING), ' - ', d.day_name) AS day_label,\n  CASE d.day_name\n    WHEN 'Monday' THEN '1-Mon'\n    WHEN 'Tuesday' THEN '2-Tue'\n    WHEN 'Wednesday' THEN '3-Wed'\n    WHEN 'Thursday' THEN '4-Thu'\n    WHEN 'Friday' THEN '5-Fri'\n    WHEN 'Saturday' THEN '6-Sat'\n    WHEN 'Sunday' THEN '7-Sun'\n  END AS day_of_week,\n  CONCAT(CAST(CASE t.time_of_day WHEN 'Morning' THEN 1 WHEN 'Afternoon' THEN 2 WHEN 'Evening' THEN 3 WHEN 'Night' THEN 4 END AS STRING), ' - ', t.time_of_day) AS time_of_day_label,\n  t.time_of_day,\n  LPAD(CAST(t.hour AS STRING), 2, '0') AS pickup_hour,\n  l.zone_name AS pickup_zone,\n  p.payment_type_name AS payment_type,\n  CASE WHEN d.day_name IN ('Saturday', 'Sunday') THEN 'Weekend' ELSE 'Weekday' END AS day_type\nFROM `students_data`.`team-1-data-schema`.`fact_journey` f JOIN `students_data`.`team-1-data-schema`.`dim_date` d ON f.pickup_due_date_sk = d.date_sk JOIN `students_data`.`team-1-data-schema`.`dim_time` t ON f.pickup_due_time_sk = t.time_sk JOIN `students_data`.`team-1-data-schema`.`dim_location` l ON f.pickup_location_sk = l.location_sk JOIN `students_data`.`team-1-data-schema`.`dim_payment_type` p ON f.payment_type_sk = p.payment_type_sk\n",
+        "measures": [
+          {
+            "name": "total_bookings",
+            "expr": "COUNT(DISTINCT booking_id)",
+            "displayName": "Total Bookings",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "completed_jobs",
+            "expr": "COUNT(DISTINCT booking_id) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Completed Jobs",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "cancel_nofare_count",
+            "expr": "COUNT(DISTINCT booking_id) FILTER (WHERE trip_status IN ('Cancelled', 'No Fare'))",
+            "displayName": "Cancel / No Fare Count",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          },
+          {
+            "name": "completion_rate",
+            "expr": "MEASURE(completed_jobs) / MEASURE(total_bookings)",
+            "displayName": "Completion Rate",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "cancel_nofare_rate",
+            "expr": "MEASURE(cancel_nofare_count) / MEASURE(total_bookings)",
+            "displayName": "Cancel / No Fare Rate",
+            "format": {
+              "type": "percentage",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "total_revenue",
+            "expr": "SUM(price) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Total Revenue",
+            "format": {
+              "type": "currency",
+              "currencyCode": "GBP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_fare",
+            "expr": "AVG(price) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Average Fare",
+            "format": {
+              "type": "currency",
+              "currencyCode": "GBP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_wait_minutes",
+            "expr": "AVG(wait_time_minutes)",
+            "displayName": "Average Wait Minutes",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_trip_duration",
+            "expr": "AVG(trip_duration_minutes) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Average Trip Duration",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "avg_distance",
+            "expr": "AVG(distance) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Average Distance",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_price_per_mile",
+            "expr": "AVG(price_per_mile) FILTER (WHERE trip_status = 'Completed')",
+            "displayName": "Average Price Per Mile",
+            "format": {
+              "type": "currency",
+              "currencyCode": "GBP",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 2.0
+              }
+            }
+          },
+          {
+            "name": "avg_total_time",
+            "expr": "AVG(total_time_taken)",
+            "displayName": "Average Total Time",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 1.0
+              }
+            }
+          },
+          {
+            "name": "booking_count",
+            "expr": "COUNT(1)",
+            "displayName": "Booking Count",
+            "format": {
+              "type": "number",
+              "decimalPlaces": {
+                "type": "exact",
+                "places": 0.0
+              }
+            }
+          }
+        ],
+        "filter": "trip_date <= current_date()",
+        "version": "1.1",
+        "fields": [
+          {
+            "name": "trip_date",
+            "expr": "trip_date",
+            "displayName": "Trip Date",
+            "format": {
+              "type": "date",
+              "dateFormat": "year_month_day"
+            }
+          },
+          {
+            "name": "year_label",
+            "expr": "year_label",
+            "displayName": "Year"
+          },
+          {
+            "name": "month_label",
+            "expr": "month_label",
+            "displayName": "Month"
+          },
+          {
+            "name": "day_label",
+            "expr": "day_label",
+            "displayName": "Day"
+          },
+          {
+            "name": "day_of_week",
+            "expr": "day_of_week",
+            "displayName": "Day of Week"
+          },
+          {
+            "name": "time_of_day_label",
+            "expr": "time_of_day_label",
+            "displayName": "Time of Day"
+          },
+          {
+            "name": "time_of_day",
+            "expr": "time_of_day",
+            "displayName": "Time Period"
+          },
+          {
+            "name": "pickup_hour",
+            "expr": "pickup_hour",
+            "displayName": "Pickup Hour"
+          },
+          {
+            "name": "pickup_zone",
+            "expr": "pickup_zone",
+            "displayName": "Pickup Zone"
+          },
+          {
+            "name": "payment_type",
+            "expr": "payment_type",
+            "displayName": "Payment Type"
+          },
+          {
+            "name": "day_type",
+            "expr": "day_type",
+            "displayName": "Day Type"
+          },
+          {
+            "name": "vehicle",
+            "expr": "vehicle",
+            "displayName": "Vehicle"
+          },
+          {
+            "name": "priority",
+            "expr": "priority",
+            "displayName": "Priority"
+          },
+          {
+            "name": "is_weekend",
+            "expr": "CASE WHEN day_type = 'Weekend' THEN 'Weekend' ELSE 'Weekday' END",
+            "displayName": "Weekend Flag"
+          },
+          {
+            "name": "is_price_outlier",
+            "expr": "is_price_outlier",
+            "displayName": "Price Outlier"
+          }
+        ],
+        "comment": "Taxi operations analysis across business, driver, customer and dispatcher perspectives"
+      }
     }
   ],
   "pages": [
     {
       "name": "0135e01e",
-      "displayName": "Page 1",
+      "displayName": "Overview",
       "layout": [
         {
           "widget": {
@@ -1807,6 +2059,4112 @@
             "y": 35,
             "width": 5,
             "height": 3
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "business_owner",
+      "displayName": "Business Owner",
+      "layout": [
+        {
+          "widget": {
+            "name": "bo_filter_year",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "year_label",
+                      "expression": "`year_label`"
+                    },
+                    {
+                      "name": "year_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Year"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_filter_month",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "month_label",
+                      "expression": "`month_label`"
+                    },
+                    {
+                      "name": "month_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Month"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_filter_day",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_label",
+                      "expression": "`day_label`"
+                    },
+                    {
+                      "name": "day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_filter_time",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day_label",
+                      "expression": "`time_of_day_label`"
+                    },
+                    {
+                      "name": "time_of_day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Time of Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "time_of_day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_intro",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Operational view of revenue, zone demand, payment mix and cancellation pressure."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_revenue_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "measure(total_revenue)",
+                      "expression": "MEASURE(`total_revenue`)"
+                    }
+                  ],
+                  "filters": [
+                    {
+                      "expression": "`is_price_outlier` = false"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Revenue Trend",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_revenue)",
+                  "displayName": "Total Revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 8,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_payment_mix",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "payment_type",
+                      "expression": "`payment_type`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Bookings by Payment Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "pie",
+              "encodings": {
+                "angle": {
+                  "fieldName": "measure(total_bookings)",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "Total Bookings"
+                },
+                "color": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 4,
+            "width": 4,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_top_zones",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Top Pickup Zones",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_cancel_by_payment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "payment_type",
+                      "expression": "`payment_type`"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Cancel Rate by Payment Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(cancel_nofare_rate)",
+                  "displayName": "Cancel / No Fare Rate",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 8,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_zone_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "measure(completed_jobs)",
+                      "expression": "MEASURE(`completed_jobs`)"
+                    },
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    },
+                    {
+                      "name": "measure(total_revenue)",
+                      "expression": "MEASURE(`total_revenue`)"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pickup_zone",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "measure(total_bookings)"
+                  },
+                  {
+                    "fieldName": "measure(completed_jobs)"
+                  },
+                  {
+                    "fieldName": "measure(completion_rate)"
+                  },
+                  {
+                    "fieldName": "measure(cancel_nofare_rate)"
+                  },
+                  {
+                    "fieldName": "measure(total_revenue)"
+                  },
+                  {
+                    "fieldName": "measure(avg_fare)"
+                  },
+                  {
+                    "fieldName": "measure(avg_wait_minutes)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 13,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_kpi_revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_revenue)",
+                      "expression": "MEASURE(`total_revenue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Revenue"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_revenue)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_kpi_avgfare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Fare"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_fare)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_kpi_completion",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Completion Rate"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(completion_rate)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_kpi_wait",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Wait (mins)"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_heatmap",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_hour",
+                  "displayName": "Hour",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "day_of_week",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 18,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_revenue_by_period",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Revenue by Time of Day &amp; Day Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "bo_bookings_daytype",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Bookings by Day Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 24,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "drivers",
+      "displayName": "Drivers",
+      "layout": [
+        {
+          "widget": {
+            "name": "dr_filter_year",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "year_label",
+                      "expression": "`year_label`"
+                    },
+                    {
+                      "name": "year_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Year"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_filter_month",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "month_label",
+                      "expression": "`month_label`"
+                    },
+                    {
+                      "name": "month_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Month"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_filter_day",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_label",
+                      "expression": "`day_label`"
+                    },
+                    {
+                      "name": "day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_filter_time",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day_label",
+                      "expression": "`time_of_day_label`"
+                    },
+                    {
+                      "name": "time_of_day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Time of Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "time_of_day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_intro",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Best shift windows, busiest areas and demand patterns for driver planning."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_demand_matrix",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "day_of_week"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "pickup_hour"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`pickup_hour`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Demand by Day and Hour"
+              },
+              "version": 3,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": [
+                  {
+                    "fieldName": "day_of_week"
+                  }
+                ],
+                "columns": [
+                  {
+                    "fieldName": "pickup_hour"
+                  }
+                ],
+                "cell": {
+                  "type": "single-cell",
+                  "fieldName": "measure(total_bookings)",
+                  "cellType": "text"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 8,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_busiest_zones",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Busiest Pickup Zones",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 8,
+            "y": 4,
+            "width": 4,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_demand_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Booking Trend",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_fare_by_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Fare by Time of Day",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 10,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_shift_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    },
+                    {
+                      "name": "measure(avg_trip_duration)",
+                      "expression": "MEASURE(`avg_trip_duration`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "day_of_week",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "time_of_day",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "pickup_hour",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "measure(total_bookings)"
+                  },
+                  {
+                    "fieldName": "measure(completion_rate)"
+                  },
+                  {
+                    "fieldName": "measure(avg_fare)"
+                  },
+                  {
+                    "fieldName": "measure(avg_trip_duration)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 14,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_kpi_bookings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Bookings"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_bookings)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_kpi_avgfare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Fare"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_fare)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_kpi_duration",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_trip_duration)",
+                      "expression": "MEASURE(`avg_trip_duration`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Trip Duration"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_trip_duration)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_kpi_completion",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Completion Rate"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(completion_rate)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_revenue_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_revenue)",
+                      "expression": "MEASURE(`total_revenue`)"
+                    },
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "measure(total_revenue)",
+                  "displayName": "Total Revenue",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "y": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_fare_by_day",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Avg Fare by Day of Week",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_of_week",
+                  "displayName": "Day of Week",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_of_week",
+                  "displayName": "Day of Week",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 19,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_completion_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Completion Rate by Zone",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(completion_rate)",
+                  "displayName": "Completion Rate",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dr_duration_by_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_trip_duration)",
+                      "expression": "MEASURE(`avg_trip_duration`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Avg Trip Duration by Time of Day",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_trip_duration)",
+                  "displayName": "Avg Trip Duration",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 24,
+            "width": 6,
+            "height": 5
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "customers",
+      "displayName": "Customers",
+      "layout": [
+        {
+          "widget": {
+            "name": "cu_filter_year",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "year_label",
+                      "expression": "`year_label`"
+                    },
+                    {
+                      "name": "year_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Year"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_filter_month",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "month_label",
+                      "expression": "`month_label`"
+                    },
+                    {
+                      "name": "month_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Month"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_filter_day",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_label",
+                      "expression": "`day_label`"
+                    },
+                    {
+                      "name": "day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_filter_time",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day_label",
+                      "expression": "`time_of_day_label`"
+                    },
+                    {
+                      "name": "time_of_day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Time of Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "time_of_day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_intro",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Wait-time and price drivers that shape the customer experience."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_wait_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Wait by Pickup Zone",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "displayName": "Avg Wait (mins)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_fare_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Fare by Pickup Zone",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 4,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_wait_matrix",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "cubeGroupingSets": {
+                    "sets": [
+                      {
+                        "fieldNames": [
+                          "day_of_week"
+                        ]
+                      },
+                      {
+                        "fieldNames": [
+                          "pickup_hour"
+                        ]
+                      }
+                    ]
+                  },
+                  "disaggregated": false,
+                  "orders": [
+                    {
+                      "direction": "ASC",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "direction": "ASC",
+                      "expression": "`pickup_hour`"
+                    }
+                  ]
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Wait by Day and Hour"
+              },
+              "version": 3,
+              "widgetType": "pivot",
+              "encodings": {
+                "rows": [
+                  {
+                    "fieldName": "day_of_week"
+                  }
+                ],
+                "columns": [
+                  {
+                    "fieldName": "pickup_hour"
+                  }
+                ],
+                "cell": {
+                  "type": "single-cell",
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "cellType": "text"
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 7,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_fare_by_payment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "payment_type",
+                      "expression": "`payment_type`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Fare by Payment Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 9,
+            "width": 5,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_wait_by_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Average Wait by Time of Day",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "displayName": "Avg Wait (mins)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 7,
+            "y": 12,
+            "width": 5,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_compare_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    },
+                    {
+                      "name": "measure(avg_distance)",
+                      "expression": "MEASURE(`avg_distance`)"
+                    },
+                    {
+                      "name": "measure(avg_trip_duration)",
+                      "expression": "MEASURE(`avg_trip_duration`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "pickup_zone",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "day_type",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "measure(avg_wait_minutes)"
+                  },
+                  {
+                    "fieldName": "measure(avg_fare)"
+                  },
+                  {
+                    "fieldName": "measure(avg_distance)"
+                  },
+                  {
+                    "fieldName": "measure(avg_trip_duration)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_kpi_wait",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Wait Time"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_kpi_fare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Fare"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_fare)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_kpi_distance",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_distance)",
+                      "expression": "MEASURE(`avg_distance`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Distance"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_distance)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_kpi_duration",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_trip_duration)",
+                      "expression": "MEASURE(`avg_trip_duration`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Trip Duration"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_trip_duration)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 1,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_wait_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Wait Time Trend",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "displayName": "Avg Wait (mins)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_ppm_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(avg_price_per_mile)",
+                      "expression": "MEASURE(`avg_price_per_mile`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Price per Mile by Zone",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_price_per_mile)",
+                  "displayName": "Avg Price per Mile",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 20,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_fare_daytype",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Fare by Day Type &amp; Time",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_fare)",
+                  "displayName": "Avg Fare",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 24,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "cu_wait_daytype",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Wait by Day Type &amp; Time",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "displayName": "Avg Wait (mins)",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 24,
+            "width": 6,
+            "height": 4
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    },
+    {
+      "name": "dispatcher",
+      "displayName": "Dispatcher",
+      "layout": [
+        {
+          "widget": {
+            "name": "dp_filter_year",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "year_label",
+                      "expression": "`year_label`"
+                    },
+                    {
+                      "name": "year_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Year"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "year_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_year_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_filter_month",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "month_label",
+                      "expression": "`month_label`"
+                    },
+                    {
+                      "name": "month_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Month"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "month_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_month_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_filter_day",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_label",
+                      "expression": "`day_label`"
+                    },
+                    {
+                      "name": "day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_filter_time",
+            "queries": [
+              {
+                "name": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day_label",
+                      "expression": "`time_of_day_label`"
+                    },
+                    {
+                      "name": "time_of_day_label_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "Time of Day"
+              },
+              "widgetType": "filter-multi-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "time_of_day_label",
+                    "queryName": "dashboards/01f1b33b30ac103f907993ba94ab46b0/datasets/01f1b33df93e169abcbfee9e2f70774d_time_of_day_label"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 0,
+            "width": 3,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_intro",
+            "multilineTextboxSpec": {
+              "lines": [
+                "Execution view of booking volume, service reliability and no-fare pressure."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 1,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_bookings",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Bookings"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_bookings)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_completed",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(completed_jobs)",
+                      "expression": "MEASURE(`completed_jobs`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Completed Jobs"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(completed_jobs)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_completion",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Completion Rate"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(completion_rate)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 2,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_nofare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(cancel_nofare_count)",
+                      "expression": "MEASURE(`cancel_nofare_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Cancel / No Fare Count"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(cancel_nofare_count)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 2,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_booking_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Bookings Over Time",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_completion_trend",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "daily(trip_date)",
+                      "expression": "DATE_TRUNC(\"DAY\", `trip_date`)"
+                    },
+                    {
+                      "name": "measure(completion_rate)",
+                      "expression": "MEASURE(`completion_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Completion Rate Over Time",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "line",
+              "encodings": {
+                "x": {
+                  "fieldName": "daily(trip_date)",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "temporal"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(completion_rate)",
+                  "displayName": "Completion Rate",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 6,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_cancel_by_zone",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Cancel Rate by Pickup Zone",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(cancel_nofare_rate)",
+                  "displayName": "Cancel / No Fare Rate",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "pickup_zone",
+                  "displayName": "Pickup Zone",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 10,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_cancel_by_time",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_count)",
+                      "expression": "MEASURE(`cancel_nofare_count`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Cancel Count by Time of Day",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(cancel_nofare_count)",
+                  "displayName": "Cancel / No Fare Count",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "time_of_day",
+                  "displayName": "Time of Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 10,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_ops_table",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    },
+                    {
+                      "name": "time_of_day",
+                      "expression": "`time_of_day`"
+                    },
+                    {
+                      "name": "pickup_zone",
+                      "expression": "`pickup_zone`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "measure(completed_jobs)",
+                      "expression": "MEASURE(`completed_jobs`)"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    },
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "day_of_week",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "time_of_day",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "pickup_zone",
+                    "useForSearch": true
+                  },
+                  {
+                    "fieldName": "measure(total_bookings)"
+                  },
+                  {
+                    "fieldName": "measure(completed_jobs)"
+                  },
+                  {
+                    "fieldName": "measure(cancel_nofare_rate)"
+                  },
+                  {
+                    "fieldName": "measure(avg_wait_minutes)"
+                  }
+                ]
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 15,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_wait",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_wait_minutes)",
+                      "expression": "MEASURE(`avg_wait_minutes`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Wait Time"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_wait_minutes)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_revenue",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_revenue)",
+                      "expression": "MEASURE(`total_revenue`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Total Revenue"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(total_revenue)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 4,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_cancelrate",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Cancel / No Fare Rate"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(cancel_nofare_rate)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 4,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_kpi_avgfare",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(avg_fare)",
+                      "expression": "MEASURE(`avg_fare`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": "Avg Fare"
+              },
+              "version": 2,
+              "widgetType": "counter",
+              "encodings": {
+                "value": {
+                  "fieldName": "measure(avg_fare)",
+                  "rowNumber": 0
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 9,
+            "y": 4,
+            "width": 3,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_heatmap",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    },
+                    {
+                      "name": "pickup_hour",
+                      "expression": "`pickup_hour`"
+                    },
+                    {
+                      "name": "day_of_week",
+                      "expression": "`day_of_week`"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {},
+              "version": 3,
+              "widgetType": "heatmap",
+              "encodings": {
+                "x": {
+                  "fieldName": "pickup_hour",
+                  "displayName": "Hour",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "day_of_week",
+                  "displayName": "Day",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "color": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 20,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_cancel_zone_payment",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "payment_type",
+                      "expression": "`payment_type`"
+                    },
+                    {
+                      "name": "measure(cancel_nofare_rate)",
+                      "expression": "MEASURE(`cancel_nofare_rate`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Cancellation Rate by Zone &amp; Payment",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(cancel_nofare_rate)",
+                  "displayName": "Cancel / No Fare Rate",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "payment_type",
+                  "displayName": "Payment Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 26,
+            "width": 6,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "dp_bookings_daytype",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "taxi_ops_analysis",
+                  "fields": [
+                    {
+                      "name": "day_type",
+                      "expression": "`day_type`"
+                    },
+                    {
+                      "name": "measure(total_bookings)",
+                      "expression": "MEASURE(`total_bookings`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "frame": {
+                "showTitle": true,
+                "title": {
+                  "value": "Bookings by Day Type",
+                  "fields": []
+                }
+              },
+              "version": 3,
+              "widgetType": "bar",
+              "encodings": {
+                "x": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                },
+                "y": {
+                  "fieldName": "measure(total_bookings)",
+                  "displayName": "Total Bookings",
+                  "scale": {
+                    "type": "quantitative"
+                  }
+                },
+                "color": {
+                  "fieldName": "day_type",
+                  "displayName": "Day Type",
+                  "scale": {
+                    "type": "categorical"
+                  }
+                }
+              },
+              "data": {
+                "queryName": "main_query"
+              }
+            }
+          },
+          "position": {
+            "x": 6,
+            "y": 26,
+            "width": 6,
+            "height": 5
           }
         }
       ],
